@@ -12,23 +12,13 @@
 
     <artifactId>lenses-topology-example-kafkastreams</artifactId>
     <version>1.0.0</version>
+    <packaging>jar</packaging>
 
     <dependencies>
         <dependency>
-            <groupId>org.apache.kafka</groupId>
-            <artifactId>kafka-clients</artifactId>
-            <version>${kafka.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.kafka</groupId>
-            <artifactId>kafka-streams</artifactId>
-            <version>${kafka.version}</version>
-        </dependency>
-        <dependency>
             <groupId>com.landoop</groupId>
             <artifactId>lenses-topology-client-kafka</artifactId>
-            <version>1.0.39</version>
+            <version>${topology.client.version}</version>
         </dependency>
     </dependencies>
-
 </project>

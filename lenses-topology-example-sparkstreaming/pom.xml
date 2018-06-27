@@ -12,13 +12,13 @@
 
     <artifactId>lenses-topology-example-sparkstreaming</artifactId>
     <version>1.0.0</version>
+    <packaging>jar</packaging>
 
     <dependencies>
         <dependency>
             <groupId>com.landoop</groupId>
             <artifactId>lenses-topology-client-kafka-spark</artifactId>
-            <version>1.0.39</version>
+            <version>${topology.client.version}</version>
         </dependency>
     </dependencies>
-
 </project>

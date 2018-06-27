@@ -5,7 +5,8 @@ import com.landoop.lenses.topology.client.Representation;
 import com.landoop.lenses.topology.client.Topology;
 import com.landoop.lenses.topology.client.TopologyBuilder;
 import com.landoop.lenses.topology.client.TopologyClient;
-import com.landoop.lenses.topology.client.metrics.TopologyKafkaClientSupplier;
+import com.landoop.lenses.topology.client.kafka.metrics.KafkaTopologyClient;
+import com.landoop.lenses.topology.client.kafka.metrics.TopologyKafkaStreamsClientSupplier;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.clients.producer.ProducerRecord;
@@ -21,21 +22,17 @@ import org.apache.kafka.streams.kstream.Produced;
 
 import java.util.Arrays;
 import java.util.Properties;
-import java.util.logging.Logger;
 import java.util.regex.Pattern;
 
 public class WordCountLambdaExample {
-
-    private static final Logger logger = Logger.getLogger(WordCountLambdaExample.class.getSimpleName());
 
     private static final String inputTopic = "wordcount-input2";
     private static final String outputTopic = "wordcount-output2";
 
     public static void main(final String[] args) throws Exception {
 
-        Topology topology = TopologyBuilder.application("wordcount-app")
-                .withNode(inputTopic, NodeType.TOPIC)
-                .withDescription("Raw lines of text")
+        Topology topology = TopologyBuilder.start("wordcount-app")
+                .withTopic(inputTopic)
                 .withRepresentation(Representation.TABLE)
                 .finish()
                 .withNode("groupby", NodeType.GROUPBY)
@@ -48,16 +45,15 @@ public class WordCountLambdaExample {
                 .withRepresentation(Representation.TABLE)
                 .withParent("groupby")
                 .finish()
-                .withNode(outputTopic, NodeType.TOPIC)
+                .withTopic(outputTopic)
                 .withParent("count")
-                .withDescription("Words put onto the output")
                 .withRepresentation(Representation.TABLE)
                 .finish()
                 .build();
 
         Properties topologyProps = new Properties();
         topologyProps.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9092");
-        TopologyClient client = new TopologyClient(topologyProps);
+        TopologyClient client = KafkaTopologyClient.create(topologyProps);
         client.register(topology);
 
         // this regular expression will split up the lines on whitespace
@@ -95,9 +91,7 @@ public class WordCountLambdaExample {
                 // Split each text line, by whitespace, into words.  The text lines are the record
                 // values, i.e. we can ignore whatever data is in the record keys and thus invoke
                 // `flatMapValues()` instead of the more generic `flatMap()`.
-                .flatMapValues(value -> {
-                    return Arrays.asList(pattern.split(value.toLowerCase()));
-                })
+                .flatMapValues(value -> Arrays.asList(pattern.split(value.toLowerCase())))
                 // Count the occurrences of each word (record key).
                 //
                 // This will change the stream type from `KStream<String, String>` to `KTable<String, Long>`
@@ -112,7 +106,7 @@ public class WordCountLambdaExample {
         // Now that we have finished the definition of the processing topology we can actually run
         // it via `start()`.  The Streams application as a whole can be launched just like any
         // normal Java application that has a `main()` method.
-        final KafkaStreams streams = new KafkaStreams(builder.build(), new StreamsConfig(streamProps), new TopologyKafkaClientSupplier(client));
+        final KafkaStreams streams = new KafkaStreams(builder.build(), new StreamsConfig(streamProps), new TopologyKafkaStreamsClientSupplier(client, topology));
 
         streams.cleanUp();
         streams.start();
