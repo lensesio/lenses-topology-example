@@ -9,8 +9,6 @@ import com.landoop.lenses.topology.client.metrics.TopologyKafkaClientSupplier;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.clients.producer.ProducerRecord;
-import org.apache.kafka.common.serialization.BytesDeserializer;
-import org.apache.kafka.common.serialization.BytesSerializer;
 import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.common.serialization.StringSerializer;
 import org.apache.kafka.streams.Consumed;
@@ -40,7 +38,18 @@ public class WordCountLambdaExample {
                 .withDescription("Raw lines of text")
                 .withRepresentation(Representation.TABLE)
                 .finish()
+                .withNode("groupby", NodeType.GROUPBY)
+                .withDescription("Group by word")
+                .withRepresentation(Representation.TABLE)
+                .withParent(inputTopic)
+                .finish()
+                .withNode("count", NodeType.COUNT)
+                .withDescription("Count words")
+                .withRepresentation(Representation.TABLE)
+                .withParent("groupby")
+                .finish()
                 .withNode(outputTopic, NodeType.TOPIC)
+                .withParent("count")
                 .withDescription("Words put onto the output")
                 .withRepresentation(Representation.TABLE)
                 .finish()
@@ -134,10 +143,9 @@ public class WordCountLambdaExample {
 
         while (true) {
             for (String line : lines) {
-                logger.info("Publishing message " + line);
                 producer.send(new ProducerRecord<>(inputTopic, line));
-                Thread.sleep(100);
             }
+            Thread.sleep(1000);
         }
         //producer.close();
     }

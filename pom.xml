@@ -9,6 +9,11 @@
     <version>1.0.0</version>
     <packaging>jar</packaging>
 
+    <modules>
+        <module>lenses-topology-example-kafkastreams</module>
+        <module>lenses-topology-example-sparkstreaming</module>
+    </modules>
+
     <properties>
         <kafka.version>1.1.0</kafka.version>
         <avro.version>1.8.2</avro.version>
@@ -25,16 +30,6 @@
     </repositories>
 
     <dependencies>
-        <dependency>
-            <groupId>org.apache.kafka</groupId>
-            <artifactId>kafka-clients</artifactId>
-            <version>${kafka.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.kafka</groupId>
-            <artifactId>kafka-streams</artifactId>
-            <version>${kafka.version}</version>
-        </dependency>
         <dependency>
             <groupId>ch.qos.logback</groupId>
             <artifactId>logback-classic</artifactId>
