@@ -31,11 +31,11 @@ import java.util.Properties;
 public class App {
 
     private static final String inputTopic = "wordcount-input";
-    private static final String outputTopic = "wordcount-output-akka";
+    private static final String outputTopic = "wordcount-output-akkastreams";
 
     public static void main(final String[] args) throws Exception {
 
-        Topology topology = TopologyBuilder.start(AppType.AkkaStreams, "akka-streams-app")
+        Topology topology = TopologyBuilder.start(AppType.AkkaStreams, "akka-streams-wordcount")
                 .withTopic(inputTopic)
                 .withRepresentation(Representation.TABLE)
                 .endNode()

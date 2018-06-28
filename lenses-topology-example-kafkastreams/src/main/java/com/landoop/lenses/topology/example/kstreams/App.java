@@ -1,5 +1,6 @@
 package com.landoop.lenses.topology.example.kstreams;
 
+import com.landoop.lenses.topology.client.AppType;
 import com.landoop.lenses.topology.client.NodeType;
 import com.landoop.lenses.topology.client.Representation;
 import com.landoop.lenses.topology.client.Topology;
@@ -26,29 +27,29 @@ import java.util.regex.Pattern;
 
 public class App {
 
-    private static final String inputTopic = "wordcount-input2";
-    private static final String outputTopic = "wordcount-output2";
+    private static final String inputTopic = "wordcount-input";
+    private static final String outputTopic = "wordcount-output-kstreams";
 
     public static void main(final String[] args) throws Exception {
 
-        Topology topology = TopologyBuilder.start("wordcount-app")
+        Topology topology = TopologyBuilder.start(AppType.KafkaStreams, "kafka-streams-wordcount")
                 .withTopic(inputTopic)
                 .withRepresentation(Representation.TABLE)
-                .finish()
+                .endNode()
                 .withNode("groupby", NodeType.GROUPBY)
                 .withDescription("Group by word")
                 .withRepresentation(Representation.TABLE)
                 .withParent(inputTopic)
-                .finish()
+                .endNode()
                 .withNode("count", NodeType.COUNT)
                 .withDescription("Count words")
                 .withRepresentation(Representation.TABLE)
                 .withParent("groupby")
-                .finish()
+                .endNode()
                 .withTopic(outputTopic)
                 .withParent("count")
                 .withRepresentation(Representation.TABLE)
-                .finish()
+                .endNode()
                 .build();
 
         Properties topologyProps = new Properties();
@@ -111,11 +112,16 @@ public class App {
         streams.cleanUp();
         streams.start();
 
-        Properties producerProps = new Properties();
-        producerProps.put("bootstrap.servers", "localhost:9092");
-        producerProps.put("key.serializer", StringSerializer.class.getName());
-        producerProps.put("value.serializer", StringSerializer.class.getName());
-        KafkaProducer<String, String> producer = new KafkaProducer<>(producerProps);
+        produceInputData();
+    }
+
+    private static void produceInputData() throws InterruptedException {
+
+        Properties props = new Properties();
+        props.put("bootstrap.servers", "localhost:9092");
+        props.put("key.serializer", StringSerializer.class.getName());
+        props.put("value.serializer", StringSerializer.class.getName());
+        KafkaProducer<String, String> producer = new KafkaProducer<>(props);
 
         String[] lines = new String[]{
                 "I can't. As much as I care about you, my first duty is to the ship.",
@@ -141,7 +147,5 @@ public class App {
             }
             Thread.sleep(1000);
         }
-        //producer.close();
     }
-
 }

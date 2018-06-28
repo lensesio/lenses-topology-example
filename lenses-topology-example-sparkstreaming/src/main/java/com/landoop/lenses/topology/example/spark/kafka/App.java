@@ -1,5 +1,6 @@
 package com.landoop.lenses.topology.example.spark.kafka;
 
+import com.landoop.lenses.topology.client.AppType;
 import com.landoop.lenses.topology.client.NodeType;
 import com.landoop.lenses.topology.client.Representation;
 import com.landoop.lenses.topology.client.Topology;
@@ -15,7 +16,6 @@ import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Encoders;
 import org.apache.spark.sql.Row;
 import org.apache.spark.sql.SparkSession;
-import org.apache.spark.sql.streaming.OutputMode;
 import org.apache.spark.sql.streaming.StreamingQuery;
 import org.apache.spark.sql.streaming.StreamingQueryException;
 
@@ -25,48 +25,32 @@ import java.util.Properties;
 
 public class App {
 
-    public static void main(String[] args) throws StreamingQueryException, IOException {
+    private static String inputTopic = "wordcount-input";
+    private static String outputTopic = "wordcount-output-spark";
 
-        String inputTopic = "wordcount-input";
+    public static void main(String[] args) throws StreamingQueryException, IOException, InterruptedException {
 
-        Topology topology = TopologyBuilder.start("my app")
+        Topology topology = TopologyBuilder.start(AppType.SparkStreaming, "spark-streaming-wordcount")
                 .withTopic(inputTopic)
                 .withDescription("Raw lines of text")
                 .withRepresentation(Representation.TABLE)
-                .finish()
+                .endNode()
                 .withNode("groupby", NodeType.GROUPBY)
                 .withDescription("Group by value")
                 .withRepresentation(Representation.TABLE)
                 .withParent("wordcount-input")
-                .finish()
+                .endNode()
                 .withNode("count", NodeType.COUNT)
                 .withDescription("Count value")
                 .withRepresentation(Representation.TABLE)
                 .withParent("groupby")
-                .finish()
-                .withNode("console", NodeType.TABLE)
+                .endNode()
+                .withTopic(outputTopic)
                 .withParent("count")
                 .withDescription("Words put onto the output")
                 .withRepresentation(Representation.TABLE)
-                .finish()
+                .endNode()
                 .build();
-
-        new Thread(() -> {
-            Properties props = new Properties();
-            props.put("bootstrap.servers", "PLAINTEXT://localhost:9092");
-            props.put("key.serializer", StringSerializer.class);
-            props.put("value.serializer", StringSerializer.class);
-            KafkaProducer<String, String> producer = new KafkaProducer<>(props);
-            while (true) {
-                try {
-                    Thread.sleep(30);
-                    producer.send(new ProducerRecord<>(inputTopic, "hello world"));
-                    producer.flush();
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-            }
-        }).start();
 
         Properties topologyProps = new Properties();
         topologyProps.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9092");
@@ -93,10 +77,47 @@ public class App {
         ).groupBy("value").count();
 
         StreamingQuery query = wordCounts.writeStream()
-                .outputMode(OutputMode.Complete())
-                .format("console")
+                .format("kafka")
+                .option("checkpointLocation", "/tmp/checkpoint")
+                .option("kafka.bootstrap.servers", "localhost:9092")
+                .option("topic", outputTopic)
                 .start();
 
+        produceInputData();
         query.awaitTermination();
+    }
+
+    private static void produceInputData() throws InterruptedException {
+
+        Properties props = new Properties();
+        props.put("bootstrap.servers", "localhost:9092");
+        props.put("key.serializer", StringSerializer.class.getName());
+        props.put("value.serializer", StringSerializer.class.getName());
+        KafkaProducer<String, String> producer = new KafkaProducer<>(props);
+
+        String[] lines = new String[]{
+                "I can't. As much as I care about you, my first duty is to the ship.",
+                "Captain, why are we out here chasing comets?",
+                "The Federation's gone; the Borg is everywhere!",
+                "This is not about revenge.",
+                "This is about justice.",
+                "I'd like to think that I haven't changed those things, sir.",
+                "The game's not big enough unless it scares you a little.",
+                "Congratulations - you just destroyed the Enterprise.",
+                "The look in your eyes, I recognize it.",
+                "You used to have it for me.",
+                "How long can two people talk about nothing?",
+                "I guess it's better to be lucky than good.",
+                "But the probability of making a six is no greater than that of rolling a seven.",
+                "We finished our first sensor sweep of the neutral zone.",
+                "Wait a minute - you've been declared dead."
+        };
+
+        while (true) {
+            for (String line : lines) {
+                producer.send(new ProducerRecord<>(inputTopic, line));
+            }
+            Thread.sleep(1000);
+        }
     }
 }
