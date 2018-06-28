@@ -1,4 +1,4 @@
-package com.landoop.lenses.topology.client.kafka.spark;
+package com.landoop.lenses.topology.example.spark.kafka;
 
 import com.landoop.lenses.topology.client.NodeType;
 import com.landoop.lenses.topology.client.Representation;
@@ -6,7 +6,10 @@ import com.landoop.lenses.topology.client.Topology;
 import com.landoop.lenses.topology.client.TopologyBuilder;
 import com.landoop.lenses.topology.client.TopologyClient;
 import com.landoop.lenses.topology.client.kafka.metrics.KafkaTopologyClient;
+import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerConfig;
+import org.apache.kafka.clients.producer.ProducerRecord;
+import org.apache.kafka.common.serialization.StringSerializer;
 import org.apache.spark.api.java.function.FlatMapFunction;
 import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Encoders;
@@ -24,8 +27,10 @@ public class App {
 
     public static void main(String[] args) throws StreamingQueryException, IOException {
 
+        String inputTopic = "wordcount-input";
+
         Topology topology = TopologyBuilder.start("my app")
-                .withTopic("wordcount-input")
+                .withTopic(inputTopic)
                 .withDescription("Raw lines of text")
                 .withRepresentation(Representation.TABLE)
                 .finish()
@@ -39,12 +44,29 @@ public class App {
                 .withRepresentation(Representation.TABLE)
                 .withParent("groupby")
                 .finish()
-                .withTopic("console")
+                .withNode("console", NodeType.TABLE)
                 .withParent("count")
                 .withDescription("Words put onto the output")
                 .withRepresentation(Representation.TABLE)
                 .finish()
                 .build();
+
+        new Thread(() -> {
+            Properties props = new Properties();
+            props.put("bootstrap.servers", "PLAINTEXT://localhost:9092");
+            props.put("key.serializer", StringSerializer.class);
+            props.put("value.serializer", StringSerializer.class);
+            KafkaProducer<String, String> producer = new KafkaProducer<>(props);
+            while (true) {
+                try {
+                    Thread.sleep(30);
+                    producer.send(new ProducerRecord<>(inputTopic, "hello world"));
+                    producer.flush();
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+        }).start();
 
         Properties topologyProps = new Properties();
         topologyProps.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9092");
@@ -61,8 +83,8 @@ public class App {
                 .readStream()
                 .format("lenses-kafka")
                 .option("kafka.bootstrap.servers", "localhost:9092")
-                .option("lenses.topology.description", topology.getDescription())
-                .option("subscribe", "wordcount-input")
+                .option("kafka.lenses.topology.description", topology.getDescription())
+                .option("subscribe", inputTopic)
                 .load();
 
         Dataset<Row> wordCounts = words.selectExpr("CAST(value AS STRING)").flatMap(

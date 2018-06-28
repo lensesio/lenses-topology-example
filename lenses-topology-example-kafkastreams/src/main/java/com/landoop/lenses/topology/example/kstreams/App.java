@@ -1,4 +1,4 @@
-package com.landoop.lenses.topology.example;
+package com.landoop.lenses.topology.example.kstreams;
 
 import com.landoop.lenses.topology.client.NodeType;
 import com.landoop.lenses.topology.client.Representation;
@@ -24,7 +24,7 @@ import java.util.Arrays;
 import java.util.Properties;
 import java.util.regex.Pattern;
 
-public class WordCountLambdaExample {
+public class App {
 
     private static final String inputTopic = "wordcount-input2";
     private static final String outputTopic = "wordcount-output2";
