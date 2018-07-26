@@ -1,6 +1,7 @@
 package com.landoop.lenses.topology.example.kstreams;
 
 import com.landoop.lenses.topology.client.*;
+import com.landoop.lenses.topology.client.Topology;
 import com.landoop.lenses.topology.client.kafka.metrics.KafkaPublisher;
 import com.landoop.lenses.topology.client.kafka.metrics.KafkaTopologyClient;
 import com.landoop.lenses.topology.client.kafka.metrics.TopologyKafkaStreamsClientSupplier;
@@ -9,10 +10,7 @@ import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.common.serialization.StringSerializer;
-import org.apache.kafka.streams.Consumed;
-import org.apache.kafka.streams.KafkaStreams;
-import org.apache.kafka.streams.StreamsBuilder;
-import org.apache.kafka.streams.StreamsConfig;
+import org.apache.kafka.streams.*;
 import org.apache.kafka.streams.kstream.KStream;
 import org.apache.kafka.streams.kstream.KTable;
 import org.apache.kafka.streams.kstream.Produced;
@@ -59,8 +57,8 @@ public class App {
 
     Properties topologyProps = new Properties();
     topologyProps.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, brokers);
-    topologyProps.put(KafkaPublisher.TOPOLOGY_TOPIC_NAME, "__topology");
-    topologyProps.put(KafkaPublisher.METRICS_TOPIC_NAME, "__topology__metrics");
+    topologyProps.put(KafkaPublisher.TOPOLOGY_TOPIC_CONFIG_KEY, "__topology");
+    topologyProps.put(KafkaPublisher.METRIC_TOPIC_CONFIG_KEY, "__topology__metrics");
     TopologyClient client = KafkaTopologyClient.create(topologyProps);
     client.register(topology);
 
@@ -100,12 +98,13 @@ public class App {
         // values, i.e. we can ignore whatever data is in the record keys and thus invoke
         // `flatMapValues()` instead of the more generic `flatMap()`.
         .flatMapValues(value -> Arrays.asList(pattern.split(value.toLowerCase())))
+        .map((key, value) -> new KeyValue<>(value, value))
         // Count the occurrences of each word (record key).
         //
         // This will change the stream type from `KStream<String, String>` to `KTable<String, Long>`
         // (word -> count).
         //
-        .groupBy((key, word) -> word)
+        .groupByKey()
         .count();
 
     // take the output table and write it to an output topic

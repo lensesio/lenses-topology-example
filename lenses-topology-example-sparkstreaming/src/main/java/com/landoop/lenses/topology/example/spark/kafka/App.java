@@ -28,7 +28,7 @@ public class App {
     if (args.length != 1 || args[0].isEmpty()) {
       throw new IllegalArgumentException("args[0] should provider the Kafka Brokers");
     }
-    String brokers = args[0];
+    String brokers = "PLAINTEXT://cloudera01.landoop.com:19092,PLAINTEXT://cloudera02.landoop.com:19092";
 
     Topology topology = TopologyBuilder.start(AppType.SparkStreaming, "spark-streaming-wordcount")
         .withTopic(inputTopic)
@@ -77,10 +77,11 @@ public class App {
     ).groupBy("value").count();
 
     StreamingQuery query = wordCounts.writeStream()
-        .format("kafka")
+        .format("lenses-kafka")
         .outputMode(OutputMode.Update())
         .option("checkpointLocation", "/tmp/checkpoint")
         .option("kafka.bootstrap.servers", brokers)
+        .option("kafka.lenses.topology.description", topology.getDescription())
         .option("topic", outputTopic)
         .start();
 
