@@ -9,10 +9,10 @@ import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.common.serialization.StringSerializer;
-import org.apache.kafka.streams.Consumed;
 import org.apache.kafka.streams.KafkaStreams;
 import org.apache.kafka.streams.StreamsBuilder;
 import org.apache.kafka.streams.StreamsConfig;
+import org.apache.kafka.streams.kstream.Consumed;
 import org.apache.kafka.streams.kstream.KStream;
 import org.apache.kafka.streams.kstream.KTable;
 import org.apache.kafka.streams.kstream.Produced;
@@ -59,8 +59,8 @@ public class App {
 
     Properties topologyProps = new Properties();
     topologyProps.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, brokers);
-    topologyProps.put(KafkaPublisher.TOPOLOGY_TOPIC_NAME, "__topology");
-    topologyProps.put(KafkaPublisher.METRICS_TOPIC_NAME, "__topology__metrics");
+    topologyProps.put(KafkaPublisher.TOPOLOGY_TOPIC_CONFIG_KEY, "__topology");
+    topologyProps.put(KafkaPublisher.METRIC_TOPIC_CONFIG_KEY, "__topology__metrics");
     TopologyClient client = KafkaTopologyClient.create(topologyProps);
     client.register(topology);
 
