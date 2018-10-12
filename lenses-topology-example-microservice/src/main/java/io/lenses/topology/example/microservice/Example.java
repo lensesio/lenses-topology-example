@@ -31,10 +31,10 @@ public class Example {
     kafkaProperties.setProperty(TopologyClient.PUBLISH_INTERVAL_CONFIG_KEY, "2000");
 
     //set the topic Lenses listens for topology information
-    kafkaProperties.setProperty(KafkaPublisher.METRIC_TOPIC_CONFIG_KEY, "__topology__metrics_tre");
+    kafkaProperties.setProperty(KafkaPublisher.METRIC_TOPIC_CONFIG_KEY, KafkaPublisher.DEFAULT_METRICS_TOPIC_NAME);
 
     //set the topic Lenses listens for metrics information
-    kafkaProperties.setProperty(KafkaPublisher.TOPOLOGY_TOPIC_CONFIG_KEY, "__topology_tre");
+    kafkaProperties.setProperty(KafkaPublisher.TOPOLOGY_TOPIC_CONFIG_KEY, KafkaPublisher.DEFAULT_TOPOLOGY_TOPIC_NAME);
 
     MyMicroserviceApp app = new MyMicroserviceApp(exchangeRepo, inputTopic, outputTopic1, outputTopic2);
     app.run(kafkaProperties);
