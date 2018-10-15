@@ -6,11 +6,11 @@ import org.apache.kafka.clients.producer.ProducerConfig;
 
 import java.util.Properties;
 
-public class Example {
+public class S3StorageServiceApp {
 
-  private static final String inputTopic = "transactions";
-  private static final String outputTopic1 = "transaction_converted";
-  private static final String outputTopic2 = "transaction_converted_high";
+  private static final String paymentsTopic = "payments";
+  private static final String convertedPaymentsTopic = "payments_xchg";
+  private static final String suspiciousPayments = "suspicious_payments";
 
   public static void main(final String[] args) throws Exception {
     if (args.length != 1 || args[0].isEmpty()) {
@@ -19,13 +19,8 @@ public class Example {
 
     final String brokers = args[0];
 
-    final CurrencyExchangeRepo exchangeRepo = new CurrencyExchangeRepo();
-    TransactionsSimulator simulator = new TransactionsSimulator(exchangeRepo);
-
     final Properties kafkaProperties = new Properties();
     kafkaProperties.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, brokers);
-    //run the simulator
-    simulator.run(kafkaProperties, inputTopic);
 
     //publish metrics every 2 seconds
     kafkaProperties.setProperty(TopologyClient.PUBLISH_INTERVAL_CONFIG_KEY, "2000");
@@ -36,8 +31,8 @@ public class Example {
     //set the topic Lenses listens for metrics information
     kafkaProperties.setProperty(KafkaPublisher.TOPOLOGY_TOPIC_CONFIG_KEY, KafkaPublisher.DEFAULT_TOPOLOGY_TOPIC_NAME);
 
-    MyMicroserviceApp app = new MyMicroserviceApp(exchangeRepo, inputTopic, outputTopic1, outputTopic2);
-    app.run(kafkaProperties);
+    S3StorageService service = new S3StorageService(convertedPaymentsTopic);
+    service.run(kafkaProperties);
 
     Thread.sleep(Long.MAX_VALUE);
   }

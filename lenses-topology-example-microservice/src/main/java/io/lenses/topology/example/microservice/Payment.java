@@ -2,17 +2,17 @@ package io.lenses.topology.example.microservice;
 
 import java.math.BigDecimal;
 
-public class Transaction {
+public class Payment {
   private String currency;
   private BigDecimal amount;
   private Long timestamp;
 
-  public Transaction(String currency, BigDecimal amount, Long timestamp) {
+  public Payment(String currency, BigDecimal amount, Long timestamp) {
     this.currency = currency;
     this.amount = amount;
     this.timestamp = timestamp;
   }
-  public Transaction(){
+  public Payment(){
 
   }
 

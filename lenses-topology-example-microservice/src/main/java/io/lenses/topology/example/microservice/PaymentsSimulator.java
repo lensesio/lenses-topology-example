@@ -13,12 +13,12 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 
-public class TransactionsSimulator implements AutoCloseable {
+public class PaymentsSimulator implements AutoCloseable {
   private final CurrencyExchangeRepo repo;
   private final ExecutorService threadPool = Executors.newFixedThreadPool(1);
   private volatile boolean stop = false;
 
-  public TransactionsSimulator(CurrencyExchangeRepo repo) {
+  public PaymentsSimulator(CurrencyExchangeRepo repo) {
     this.repo = repo;
   }
 
@@ -27,11 +27,11 @@ public class TransactionsSimulator implements AutoCloseable {
       try (KafkaProducer<String, String> producer = createProducer(properties)) {
         while (!stop) {
           repo.getCurrencies().forEach(currency -> {
-            final Transaction transaction = generateTransaction(currency);
+            final Payment payment = generatePayment(currency);
             try {
-              producer.send(new ProducerRecord<>(topic, currency, JacksonSupport.mapper.writeValueAsString(transaction)));
+              producer.send(new ProducerRecord<>(topic, currency, JacksonSupport.mapper.writeValueAsString(payment)));
             } catch (JsonProcessingException e) {
-              System.out.println("An error occurred while simulating transactions. " + e.getMessage());
+              System.out.println("An error occurred while simulating Payments. " + e.getMessage());
             }
           });
 
@@ -39,7 +39,7 @@ public class TransactionsSimulator implements AutoCloseable {
           Thread.sleep(400);
         }
       } catch (Throwable throwable) {
-        System.out.println("An error occurred while simulating transactions. " + throwable.getMessage());
+        System.out.println("An error occurred while simulating Payments. " + throwable.getMessage());
       }
       threadPool.shutdown();
     });
@@ -53,9 +53,9 @@ public class TransactionsSimulator implements AutoCloseable {
     return new KafkaProducer<>(props);
   }
 
-  private Transaction generateTransaction(String currency) {
+  private Payment generatePayment(String currency) {
     double random = ThreadLocalRandom.current().nextDouble(1, 2000000);
-    return new Transaction(currency, new BigDecimal(Math.abs(random)), System.currentTimeMillis());
+    return new Payment(currency, new BigDecimal(Math.abs(random)), System.currentTimeMillis());
   }
 
   @Override
