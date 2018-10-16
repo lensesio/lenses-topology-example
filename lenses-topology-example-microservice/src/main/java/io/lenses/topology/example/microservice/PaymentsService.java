@@ -44,19 +44,19 @@ public class PaymentsService implements AutoCloseable {
         try (KafkaConsumer<String, String> consumer = createConsumer(properties)) {
           consumer.subscribe(Collections.singleton(PaymentsTopic));
           try (KafkaProducer<String, String> producer = createProducer(properties)) {
-            try (KafkaProducer<String, String> suspicisousPaymentsProducer = createProducer(properties)) {
-              try (TopologyClient topologyClient = createTopology(properties, consumer, producer, suspicisousPaymentsProducer)) {
+            try (KafkaProducer<String, String> suspiciousPaymentsProducer = createProducer(properties)) {
+              try (TopologyClient topologyClient = createTopology(properties, consumer, producer, suspiciousPaymentsProducer)) {
                 while (!stop) {
                   consumer.poll(Duration.ofSeconds(1)).forEach(record -> {
                     try {
                       final Payment payment = JacksonSupport.mapper.readValue(record.value(), Payment.class);
-                      processPayment(payment, producer, suspicisousPaymentsProducer);
+                      processPayment(payment, producer, suspiciousPaymentsProducer);
                     } catch (IOException e) {
                       e.printStackTrace();
                     }
                   });
                   producer.flush();
-                  suspicisousPaymentsProducer.flush();
+                  suspiciousPaymentsProducer.flush();
                 }
               } catch (IOException e) {
                 e.printStackTrace();
