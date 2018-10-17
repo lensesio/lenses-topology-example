@@ -5,23 +5,15 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>com.landoop</groupId>
-    <artifactId>lenses-topology-example-kafkastreams</artifactId>
+    <artifactId>lenses-topology-example-microservice</artifactId>
     <version>1.0.0</version>
     <packaging>jar</packaging>
 
     <properties>
         <kafka.version>2.0.0</kafka.version>
         <java.version>1.8</java.version>
-        <topology.client.version>2.0.0</topology.client.version>
+        <topology.client.version>2.0.1</topology.client.version>
     </properties>
-
-    <repositories>
-        <repository>
-            <id>landoop-release</id>
-            <name>landoop-release</name>
-            <url>https://artifactory.landoop.com/artifactory/libs-release-local/</url>
-        </repository>
-    </repositories>
 
     <dependencies>
         <dependency>
@@ -32,11 +24,6 @@
         <dependency>
             <groupId>org.apache.kafka</groupId>
             <artifactId>kafka-clients</artifactId>
-            <version>${kafka.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.kafka</groupId>
-            <artifactId>kafka-streams</artifactId>
             <version>${kafka.version}</version>
         </dependency>
         <dependency>
@@ -75,34 +62,18 @@
             </plugin>
 
             <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-assembly-plugin</artifactId>
-                <version>3.1.0</version>
                 <configuration>
-                    <!-- get all project dependencies -->
+                    <archive>
+                        <manifest>
+                            <mainClass>io.lenses.topology.example.microservice.PaymentsSimulatorApp</mainClass>
+                        </manifest>
+                    </archive>
                     <descriptorRefs>
                         <descriptorRef>jar-with-dependencies</descriptorRef>
                     </descriptorRefs>
-                    <!-- MainClass in mainfest make a executable jar -->
-                    <archive>
-                        <manifest>
-                            <mainClass>com.landoop.lenses.topology.example.kstreams.App</mainClass>
-                        </manifest>
-                    </archive>
-
                 </configuration>
-                <executions>
-                    <execution>
-                        <id>make-assembly</id>
-                        <!-- bind to the packaging phase -->
-                        <phase>package</phase>
-                        <goals>
-                            <goal>single</goal>
-                        </goals>
-                    </execution>
-                </executions>
             </plugin>
-
         </plugins>
     </build>
 </project>
