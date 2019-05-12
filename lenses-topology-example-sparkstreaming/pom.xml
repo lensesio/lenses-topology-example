@@ -66,7 +66,7 @@
                     <!-- MainClass in mainfest make a executable jar -->
                     <archive>
                         <manifest>
-                            <mainClass>com.landoop.lenses.topology.example.kstreams.App</mainClass>
+                            <mainClass>com.landoop.lenses.topology.example.spark.kafka.App</mainClass>
                         </manifest>
                     </archive>
 
