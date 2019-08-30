@@ -86,7 +86,7 @@
                     <!-- MainClass in mainfest make a executable jar -->
                     <archive>
                         <manifest>
-                            <mainClass>com.landoop.lenses.topology.example.kstreams.App</mainClass>
+                            <mainClass>io.lenses.topology.example.kstreams.App</mainClass>
                         </manifest>
                     </archive>
 

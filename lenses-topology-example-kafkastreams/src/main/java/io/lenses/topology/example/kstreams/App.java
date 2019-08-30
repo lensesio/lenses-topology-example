@@ -1,4 +1,4 @@
-package com.landoop.lenses.topology.example.kstreams;
+package io.lenses.topology.example.kstreams;
 
 import com.landoop.lenses.topology.client.*;
 import com.landoop.lenses.topology.client.kafka.metrics.KafkaPublisher;

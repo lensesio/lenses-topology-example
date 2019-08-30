@@ -1,93 +1,101 @@
-package com.landoop.lenses.topology.example.akkastreams;
+package io.lenses.topology.example.spark.kafka;
 
-import akka.actor.ActorSystem;
-import akka.japi.function.Function;
-import akka.kafka.ConsumerSettings;
-import akka.kafka.ProducerSettings;
-import akka.kafka.Subscriptions;
-import akka.kafka.javadsl.Consumer;
-import akka.kafka.javadsl.Producer;
-import akka.stream.ActorMaterializer;
-import akka.stream.javadsl.Keep;
 import com.landoop.lenses.topology.client.*;
-import com.landoop.lenses.topology.client.akka.streams.AkkaStreamsKafkaMetricBuilder;
-import com.landoop.lenses.topology.client.kafka.metrics.KafkaMetricsBuilder;
 import com.landoop.lenses.topology.client.kafka.metrics.KafkaTopologyClient;
-import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.clients.producer.ProducerRecord;
-import org.apache.kafka.common.serialization.StringDeserializer;
 import org.apache.kafka.common.serialization.StringSerializer;
+import org.apache.spark.api.java.function.FlatMapFunction;
+import org.apache.spark.sql.Dataset;
+import org.apache.spark.sql.Encoders;
+import org.apache.spark.sql.Row;
+import org.apache.spark.sql.SparkSession;
+import org.apache.spark.sql.streaming.OutputMode;
+import org.apache.spark.sql.streaming.StreamingQuery;
+import org.apache.spark.sql.streaming.StreamingQueryException;
 
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.Properties;
 
 public class App {
 
-  private static final String inputTopic = "wordcount-input";
-  private static final String outputTopic = "wordcount-output-akkastreams";
+  private static String inputTopic = "wordcount-input";
+  private static String outputTopic = "wordcount-output-spark";
 
-  public static void main(final String[] args) throws Exception {
+  public static void main(String[] args) throws StreamingQueryException, IOException, InterruptedException {
     if (args.length != 1 || args[0].isEmpty()) {
       throw new IllegalArgumentException("args[0] should provider the Kafka Brokers");
     }
+    String brokers = args[0];
 
-    final String brokers = args[0];
-    Topology topology = TopologyBuilder.start(AppType.AkkaStreams, "akka-streams-wordcount")
+    Topology topology = TopologyBuilder.start(AppType.SparkStreaming, "spark-streaming-wordcount")
         .withTopic(inputTopic)
+        .withDescription("Raw lines of text")
         .withRepresentation(Representation.TABLE)
         .endNode()
         .withNode("groupby", NodeType.GROUPBY)
-        .withDescription("Group by word")
+        .withDescription("Group by value")
         .withRepresentation(Representation.TABLE)
-        .withParent(inputTopic)
+        .withParent("wordcount-input")
         .endNode()
         .withNode("count", NodeType.COUNT)
-        .withDescription("Count words")
+        .withDescription("Count value")
         .withRepresentation(Representation.TABLE)
         .withParent("groupby")
         .endNode()
         .withTopic(outputTopic)
         .withParent("count")
+        .withDescription("Words put onto the output")
         .withRepresentation(Representation.TABLE)
         .endNode()
         .build();
 
     Properties topologyProps = new Properties();
-    topologyProps.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, brokers);
+    topologyProps.setProperty("lenses.topics.topology", "__topology");
+    topologyProps.setProperty("lenses.topics.metrics", "__topology__metrics");
 
+    topologyProps.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, brokers);
     TopologyClient client = KafkaTopologyClient.create(topologyProps);
     client.register(topology);
 
-    ActorSystem system = ActorSystem.create();
-    ActorMaterializer materializer = ActorMaterializer.create(system);
+    SparkSession spark = SparkSession
+        .builder()
+        .master("local[4]")
+        .appName("kafka-topology")
+            .config("lenses.topics.topology", "__topology")
+            .config("lenses.topics.metrics", "__topology__metrics")
+        .getOrCreate();
 
-    final ConsumerSettings<String, String> consumerSettings =
-        ConsumerSettings.create(system, new StringDeserializer(), new StringDeserializer())
-            .withBootstrapServers(brokers)
-            .withGroupId("topology-client-worker");
+    Dataset<Row> words = spark
+        .readStream()
+        .format("lenses-kafka")
+        .option("kafka.bootstrap.servers", brokers)
+        .option("kafka.lenses.topology.description", topology.getDescription())
+        .option("lenses.topics.topology", "__topology")
+        .option("lenses.topics.metrics", "__topology__metrics")
+        .option("subscribe", inputTopic)
+        .load();
 
-    final ProducerSettings<String, String> producerSettings =
-        ProducerSettings
-            .create(system, new StringSerializer(), new StringSerializer())
-            .withBootstrapServers(brokers);
+    Dataset<Row> wordCounts = words.selectExpr("CAST(value AS STRING)").flatMap(
+        (FlatMapFunction<Row, String>) row -> Arrays.stream(row.getAs("value").toString().split(" ")).iterator(),
+        Encoders.STRING()
+    ).groupBy("value").count();
 
-    KafkaProducer<String, String> producer = producerSettings.createKafkaProducer();
+    StreamingQuery query = wordCounts.writeStream()
+        .format("kafka")
+        .outputMode(OutputMode.Update())
+        .option("checkpointLocation", "/tmp/checkpoint")
+        .option("kafka.bootstrap.servers", brokers)
+            .option("lenses.topics.topology", "__topology")
+            .option("lenses.topics.metrics", "__topology__metrics")
 
-    Consumer.Control control = Consumer.plainSource(consumerSettings, Subscriptions.topics(inputTopic))
-        .mapConcat((Function<ConsumerRecord<String, String>, Iterable<String>>) param -> {
-          String line = param.value();
-          return Arrays.asList(line.split(" "));
-        })
-        .map(value -> new ProducerRecord<String, String>(outputTopic, value))
-        .toMat(Producer.plainSink(producerSettings, producer), Keep.left())
-        .run(materializer);
-
-    client.register(topology.getAppName(), inputTopic, new AkkaStreamsKafkaMetricBuilder(control));
-    client.register(topology.getAppName(), outputTopic, new KafkaMetricsBuilder(producer));
+            .option("topic", outputTopic)
+        .start();
 
     produceInputData(brokers);
+    query.awaitTermination();
   }
 
   private static void produceInputData(String brokers) throws InterruptedException {

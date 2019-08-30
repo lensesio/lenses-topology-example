@@ -26,10 +26,10 @@ public class SuspiciousPaymentsServiceApp {
     kafkaProperties.setProperty(TopologyClient.PUBLISH_INTERVAL_CONFIG_KEY, "2000");
 
     //set the topic Lenses listens for topology information
-    kafkaProperties.setProperty(KafkaPublisher.METRIC_TOPIC_CONFIG_KEY, KafkaPublisher.DEFAULT_METRICS_TOPIC_NAME);
+    kafkaProperties.setProperty(KafkaPublisher.METRIC_TOPIC_CONFIG_KEY, "__topology__metrics_master");
 
     //set the topic Lenses listens for metrics information
-    kafkaProperties.setProperty(KafkaPublisher.TOPOLOGY_TOPIC_CONFIG_KEY, KafkaPublisher.DEFAULT_TOPOLOGY_TOPIC_NAME);
+    kafkaProperties.setProperty(KafkaPublisher.TOPOLOGY_TOPIC_CONFIG_KEY, "__topology_master");
 
     SuspiciousPaymentsService suspiciousPaymentsService = new SuspiciousPaymentsService(suspiciousPayments);
     suspiciousPaymentsService.run(kafkaProperties);
