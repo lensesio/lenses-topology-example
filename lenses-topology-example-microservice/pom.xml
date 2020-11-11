@@ -4,15 +4,15 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>com.landoop</groupId>
+    <groupId>io.lenses</groupId>
     <artifactId>lenses-topology-example-microservice</artifactId>
     <version>1.0.0</version>
     <packaging>jar</packaging>
 
     <properties>
-        <kafka.version>2.0.0</kafka.version>
+        <kafka.version>2.6.0</kafka.version>
         <java.version>1.8</java.version>
-        <topology.client.version>4.0.0</topology.client.version>
+        <topology.client.version>4.1.2</topology.client.version>
     </properties>
 
     <dependencies>
@@ -27,12 +27,12 @@
             <version>${kafka.version}</version>
         </dependency>
         <dependency>
-            <groupId>com.landoop</groupId>
+            <groupId>io.lenses</groupId>
             <artifactId>lenses-topology-client-core</artifactId>
             <version>${topology.client.version}</version>
         </dependency>
         <dependency>
-            <groupId>com.landoop</groupId>
+            <groupId>io.lenses</groupId>
             <artifactId>lenses-topology-client-kafka</artifactId>
             <version>${topology.client.version}</version>
         </dependency>

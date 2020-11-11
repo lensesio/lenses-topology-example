@@ -1,7 +1,7 @@
 package io.lenses.topology.example.microservice;
 
-import com.landoop.lenses.topology.client.TopologyClient;
-import com.landoop.lenses.topology.client.kafka.metrics.KafkaPublisher;
+import io.lenses.topology.client.TopologyClient;
+import io.lenses.topology.client.kafka.metrics.KafkaPublisher;
 import org.apache.kafka.clients.producer.ProducerConfig;
 
 import java.util.Properties;
@@ -26,11 +26,8 @@ public class PaymentsServiceApp {
     //publish metrics every 2 seconds
     kafkaProperties.setProperty(TopologyClient.PUBLISH_INTERVAL_CONFIG_KEY, "2000");
 
-    //set the topic Lenses listens for topology information
-    kafkaProperties.setProperty(KafkaPublisher.METRIC_TOPIC_CONFIG_KEY, KafkaPublisher.DEFAULT_METRICS_TOPIC_NAME);
-
-    //set the topic Lenses listens for metrics information
-    kafkaProperties.setProperty(KafkaPublisher.TOPOLOGY_TOPIC_CONFIG_KEY, KafkaPublisher.DEFAULT_TOPOLOGY_TOPIC_NAME);
+    kafkaProperties.put(KafkaPublisher.TOPOLOGY_TOPIC_CONFIG_KEY, "__topology");
+    kafkaProperties.put(KafkaPublisher.METRIC_TOPIC_CONFIG_KEY, "__topology__metrics");
 
     PaymentsService paymentsService = new PaymentsService(exchangeRepo, paymentsTopic, convertedPaymentsTopic, suspiciousPayments);
     paymentsService.run(kafkaProperties);
