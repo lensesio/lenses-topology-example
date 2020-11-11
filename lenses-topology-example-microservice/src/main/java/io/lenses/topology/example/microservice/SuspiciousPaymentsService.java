@@ -1,12 +1,11 @@
 package io.lenses.topology.example.microservice;
 
-import com.landoop.lenses.topology.client.TopologyClient;
-import com.landoop.lenses.topology.client.kafka.metrics.MicroserviceTopology;
+import io.lenses.topology.client.TopologyClient;
+import io.lenses.topology.client.kafka.metrics.MicroserviceTopology;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerConfig;
-import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.apache.kafka.common.serialization.StringSerializer;
 

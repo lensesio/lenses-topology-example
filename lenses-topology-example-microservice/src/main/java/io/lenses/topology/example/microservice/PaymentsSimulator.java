@@ -1,7 +1,7 @@
 package io.lenses.topology.example.microservice;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.landoop.lenses.topology.client.JacksonSupport;
+import io.lenses.topology.client.JacksonSupport;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.common.serialization.StringSerializer;
